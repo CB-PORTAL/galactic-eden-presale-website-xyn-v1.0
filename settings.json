@@ -1,0 +1,5 @@
+{
+    "css.validate": false,
+    "tailwindCSS.emmetCompletions": true,
+    "tailwindCSS.experimental.configFile": "tailwind.config.ts"
+  }

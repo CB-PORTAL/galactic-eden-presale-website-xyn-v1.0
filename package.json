@@ -3,32 +3,33 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-      "dev": "next dev",
-      "build": "next build",
-      "start": "next start",
-      "convert-key": "ts-node src/scripts/convert-private-key.ts"
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "convert-key": "ts-node src/scripts/convert-private-key.ts"
     },
     "dependencies": {
-      "@solana/spl-token": "^0.4.9",
-      "@solana/wallet-adapter-base": "^0.9.23",
-      "@solana/wallet-adapter-react": "^0.15.35",
-      "@solana/wallet-adapter-react-ui": "^0.9.35",
-      "@solana/wallet-adapter-wallets": "^0.19.32",
-      "@solana/web3.js": "^1.98.0",
-      "bs58": "^6.0.0",
-      "lucide-react": "^0.469.0",
-      "next": "13.4.12",
-      "react": "18.2.0",
-      "react-dom": "18.2.0",
-      "tailwindcss": "^3.3.2"
+        "@solana/spl-token": "^0.4.9",
+        "@solana/wallet-adapter-base": "^0.9.23",
+        "@solana/wallet-adapter-react": "^0.15.35",
+        "@solana/wallet-adapter-react-ui": "^0.9.35",
+        "@solana/wallet-adapter-wallets": "^0.19.32",
+        "@solana/web3.js": "^1.98.0",
+        "bs58": "^6.0.0",
+        "lucide-react": "^0.469.0",
+        "next": "13.4.12",
+        "pino-pretty": "^13.0.0",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "tailwindcss": "^3.3.2"
     },
     "devDependencies": {
-      "@types/node": "^20.17.12",
-      "@types/react": "^18.2.8",
-      "@types/react-dom": "^18.2.4",
-      "autoprefixer": "^10.4.14",
-      "postcss": "^8.4.21",
-      "typescript": "^5.7.3",
-      "ts-node": "^10.9.1"
+        "@types/node": "^20.17.12",
+        "@types/react": "^18.2.8",
+        "@types/react-dom": "^18.2.4",
+        "autoprefixer": "^10.4.14",
+        "postcss": "^8.4.21",
+        "ts-node": "^10.9.1",
+        "typescript": "^5.7.3"
     }
-  }
+}

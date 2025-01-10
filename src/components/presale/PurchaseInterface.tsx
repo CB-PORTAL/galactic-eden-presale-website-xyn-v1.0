@@ -14,16 +14,26 @@ export function PurchaseInterface() {
   const { connection } = useConnection();
   const [xynAmount, setXynAmount] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [status, setStatus] = useState("");
 
+  // Convert XYN input to SOL cost
   const solAmount = parseFloat(xynAmount) / PRESALE_CONFIG.XYN_PER_SOL || 0;
 
   const handlePurchase = async () => {
-    if (!window.solana?.publicKey || !xynAmount) return;
+    if (!window.solana?.publicKey) {
+      alert("Phantom wallet not connected!");
+      return;
+    }
+    if (!xynAmount || solAmount <= 0) {
+      alert("Please enter a valid XYN amount");
+      return;
+    }
 
     try {
       setIsProcessing(true);
+      setStatus("Transferring SOL...");
 
-      // 1) Send SOL to the presale wallet
+      // 1) Create SOL transfer
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: window.solana.publicKey,
@@ -32,26 +42,28 @@ export function PurchaseInterface() {
         })
       );
 
+      // get latest blockhash
       const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = window.solana.publicKey;
 
+      // sign + send
       const signed = await window.solana.signTransaction(transaction);
       const signature = await connection.sendRawTransaction(signed.serialize());
       await connection.confirmTransaction(signature);
 
+      // Notify user
       alert("SOL transferred! Transaction: " + signature);
 
-      // 2) **Distribute** XYN to the buyer (the current wallet)
+      // 2) Distribute XYN
+      setStatus("Distributing XYN...");
       const buyerPubkey = window.solana.publicKey.toString();
-      // We'll call our new /api/distribute route
+      console.log("Calling /api/distribute with:", { buyerPubkey, xynAmount });
+
       const distributeRes = await fetch("/api/distribute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          buyerPubkey,
-          xynAmount // how many tokens user is purchasing
-        })
+        body: JSON.stringify({ buyerPubkey, xynAmount })
       });
 
       if (!distributeRes.ok) {
@@ -61,11 +73,14 @@ export function PurchaseInterface() {
 
       const distData = await distributeRes.json();
       alert("XYN Distribution successful! Signature: " + distData.signature);
+      setStatus("Transaction Complete!");
 
+      // Reset input
       setXynAmount("");
     } catch (error) {
       console.error("Purchase failed:", error);
       alert("Purchase failed or distribution error. Please try again.");
+      setStatus("");
     } finally {
       setIsProcessing(false);
     }
@@ -83,12 +98,11 @@ export function PurchaseInterface() {
             onChange={(e) => setXynAmount(e.target.value)}
             className="w-full p-3 bg-black/20 border border-blue-500/30 rounded"
             placeholder="Enter XYN amount (min 100,000)"
-            min="100000"
-            step="100000"
           />
           <p className="mt-2 text-gray-400 text-sm">
             Cost: {solAmount.toFixed(4)} SOL
           </p>
+          {status && <p className="text-blue-500 text-sm">{status}</p>}
         </div>
 
         <button
