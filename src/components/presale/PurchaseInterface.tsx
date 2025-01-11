@@ -78,10 +78,10 @@ export function PurchaseInterface() {
     
       // We'll give a more thorough user-facing message:
       const maybeTimeoutHint =      
-    `If this error said "Transaction not confirmed in X seconds" or "Timeout," 
-    check your Phantom wallet or Solana Explorer to see if the tokens arrived anyway. 
-    Sometimes the network finalizes slower than our code expects,
-    but the purchase still goes through on-chain!`;
+    `If this error said, something along the lines of, "Transaction not confirmed in X seconds"
+    or "Timeout," check your Phantom wallet or Solana Explorer to see if the tokens arrive
+    anyway. Sometimes the network finalizes slower than our code expects, but the purchase
+    still goes through on-chain!`;
       
       alert(`Purchase failed or distribution error. Please try again.
     ${maybeTimeoutHint}`);
