@@ -73,13 +73,25 @@ export function PurchaseInterface() {
 
       setStatus("Transaction Complete!");
       setXynAmount("");
-    } catch (error) {
-      console.error("Purchase failed:", error);
-      alert("Purchase failed or distribution error. Please try again.");
+    } catch (error: any) {
+      console.error("Purchase failed or distribution error:", error);
+    
+      // We'll give a more thorough user-facing message:
+      const maybeTimeoutHint =      
+    `If this error said "Transaction not confirmed in X seconds" or "Timeout," 
+    check your Phantom wallet or Solana Explorer to see if the tokens arrived anyway. 
+    Sometimes the network finalizes slower than our code expects,
+    but the purchase still goes through on-chain!`;
+      
+      alert(`Purchase failed or distribution error. Please try again.
+    ${maybeTimeoutHint}`);
+    
+      // Optionally reset your status or show an error state in the UI
       setStatus("");
     } finally {
       setIsProcessing(false);
     }
+    
   };
 
   return (
