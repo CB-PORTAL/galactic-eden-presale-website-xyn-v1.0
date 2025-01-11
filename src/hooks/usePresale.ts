@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-const RPC = process.env.NEXT_PUBLIC_RPC_ENDPOINT || "https://api.mainnet-beta.solana.com";
+// 1) Pull endpoint from env
+const RPC = process.env.NEXT_PUBLIC_RPC_ENDPOINT || "fallback-if-empty";
+
+// 2) Create a single Connection instance
 const connection = new Connection(RPC);
 
 export function usePresale() {
@@ -11,7 +14,7 @@ export function usePresale() {
   const [balance, setBalance] = useState<number | null>(null);
 
   useEffect(() => {
-    let cleanup: (() => void) | undefined;
+    let cleanup: undefined | (() => void);
 
     const fetchBalance = async () => {
       if (!publicKey || !connected) {
@@ -31,7 +34,10 @@ export function usePresale() {
     };
 
     if (publicKey && connected) {
+      // fetch initial balance
       fetchBalance();
+
+      // listen for changes
       const id = connection.onAccountChange(publicKey, async () => {
         fetchBalance();
       });
@@ -49,6 +55,6 @@ export function usePresale() {
     balance,
     loading,
     connected,
-    publicKey
+    publicKey,
   };
 }
