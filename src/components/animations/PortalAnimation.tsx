@@ -1,71 +1,55 @@
 // src/components/animations/PortalAnimation.tsx
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface PortalAnimationProps {
-  active?: boolean;
+  active: boolean;
+  className?: string;
 }
 
-export const PortalAnimation: React.FC<PortalAnimationProps> = ({ active = false }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const maxRadius = Math.min(canvas.width, canvas.height) / 3;
-    let currentRadius = 0;
-    let hue = 220;
-
-    const animate = () => {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      if (active) {
-        currentRadius = Math.min(currentRadius + 1, maxRadius);
-      } else {
-        currentRadius = Math.max(currentRadius - 1, 0);
-      }
-
-      // Draw portal rings
-      for (let i = 0; i < 3; i++) {
-        const radius = currentRadius - i * 20;
-        if (radius > 0) {
-          ctx.beginPath();
-          ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-          ctx.strokeStyle = `hsla(${hue + i * 20}, 100%, 60%, ${0.5 - i * 0.1})`;
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-      }
-
-      hue = (hue + 0.5) % 360;
-      requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [active]);
-
+export function PortalAnimation({ active, className = "" }: PortalAnimationProps) {
   return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 pointer-events-none"
-      style={{ background: 'transparent' }}
-    />
+    <AnimatePresence>
+      {active && (
+        <motion.div 
+          className={`absolute inset-0 pointer-events-none ${className}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+            initial={{ scale: 0 }}
+            animate={{ 
+              scale: [1, 1.2, 1],
+              rotate: [0, 360]
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          >
+            <div className="w-96 h-96 rounded-full bg-gradient-conic from-blue-500/20 via-purple-500/20 to-blue-500/20" />
+          </motion.div>
+          
+          <motion.div
+            className="absolute inset-0"
+            animate={{
+              background: [
+                "radial-gradient(circle at center, rgba(59,130,246,0.1) 0%, transparent 70%)",
+                "radial-gradient(circle at center, rgba(59,130,246,0.2) 0%, transparent 70%)",
+                "radial-gradient(circle at center, rgba(59,130,246,0.1) 0%, transparent 70%)"
+              ]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
-};
+}
