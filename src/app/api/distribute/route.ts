@@ -1,4 +1,3 @@
-// File: /app/api/distribute/route.ts
 import { NextResponse } from "next/server";
 import {
   Connection,
@@ -18,8 +17,7 @@ const RPC_ENDPOINT       = process.env.NEXT_PUBLIC_RPC_ENDPOINT        || "";
 // Load your presale wallet from the secret bytes
 function loadWalletFromEnv() {
   const secretBytes = JSON.parse(PRESALE_SECRET_KEY) as number[];
-  const secret = Uint8Array.from(secretBytes);
-  return Keypair.fromSecretKey(secret);
+  return Keypair.fromSecretKey(Uint8Array.from(secretBytes));
 }
 
 export async function POST(request: Request) {
@@ -35,16 +33,18 @@ export async function POST(request: Request) {
     // 1) Load presale wallet
     const presaleWallet = loadWalletFromEnv();
 
-    // 2) Connect to QuickNode (no devnet fallback)
+    // 2) Connect to mainnet (no devnet fallback)
     const connection = new Connection(RPC_ENDPOINT);
 
     // 3) XYN mint
     const mintPubkey = new PublicKey(XYN_MINT_ADDRESS);
 
-    // 4) Convert string -> number
-    const xynToSend = Number(xynAmount);
+    // 4) Multiply by 10^9 so "100000" typed = 100000 tokens on-chain
+    const DECIMALS = 9;
+    const rawUserInput = Number(xynAmount);
+    const xynToSend = rawUserInput * 10 ** DECIMALS;
 
-    // 5) Get or create the presale’s associated token account
+    // 5) Source ATA
     const sourceATA = await getOrCreateAssociatedTokenAccount(
       connection,
       presaleWallet,
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       buyerPubkeyObj
     );
 
-    // 7) Create Transfer Instruction
+    // 7) Create transfer
     const transaction = new Transaction().add(
       createTransferInstruction(
         sourceATA.address,
@@ -70,19 +70,16 @@ export async function POST(request: Request) {
         xynToSend
       )
     );
-
-    // 8) Fee payer + blockhash
     transaction.feePayer = presaleWallet.publicKey;
     const { blockhash } = await connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
 
-    // 9) Sign + send
+    // 8) Sign + send
     transaction.sign(presaleWallet);
     const rawTx = transaction.serialize();
     const signature = await connection.sendRawTransaction(rawTx);
     await connection.confirmTransaction(signature);
 
-    // 10) Return success
     return NextResponse.json({ success: true, signature }, { status: 200 });
   } catch (err: any) {
     console.error("Error distributing XYN:", err);

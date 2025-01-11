@@ -42,30 +42,27 @@ export function PurchaseInterface() {
         })
       );
 
-      // get latest blockhash
+      // 2) Blockhash + feePayer
       const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = window.solana.publicKey;
 
-      // sign + send
+      // 3) Sign + send
       const signed = await window.solana.signTransaction(transaction);
       const signature = await connection.sendRawTransaction(signed.serialize());
       await connection.confirmTransaction(signature);
 
-      // Notify user
       alert("SOL transferred! Transaction: " + signature);
 
-      // 2) Distribute XYN
+      // 4) Distribute XYN
       setStatus("Distributing XYN...");
       const buyerPubkey = window.solana.publicKey.toString();
-      console.log("Calling /api/distribute with:", { buyerPubkey, xynAmount });
 
       const distributeRes = await fetch("/api/distribute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ buyerPubkey, xynAmount })
       });
-
       if (!distributeRes.ok) {
         const errData = await distributeRes.json();
         throw new Error("Distribution failed: " + errData.error);
@@ -73,9 +70,8 @@ export function PurchaseInterface() {
 
       const distData = await distributeRes.json();
       alert("XYN Distribution successful! Signature: " + distData.signature);
-      setStatus("Transaction Complete!");
 
-      // Reset input
+      setStatus("Transaction Complete!");
       setXynAmount("");
     } catch (error) {
       console.error("Purchase failed:", error);
@@ -92,6 +88,11 @@ export function PurchaseInterface() {
       <div className="space-y-4">
         <div>
           <label className="block text-sm mb-2">Amount of XYN</label>
+          <p className="text-xs text-gray-400 mt-1">
+            What you type here is the exact XYN amount you’ll receive.
+            (We handle the 9-decimal conversion on our server.)
+          </p>
+
           <input
             type="number"
             value={xynAmount}

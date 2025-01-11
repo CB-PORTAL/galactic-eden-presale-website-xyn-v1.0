@@ -19,7 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       ? WalletAdapterNetwork.Testnet
       : WalletAdapterNetwork.Devnet;
 
-  // Use QuickNode endpoint from env, fallback to clusterApiUrl
+  // Use QuickNode from env, else fallback to clusterApiUrl
   const endpoint = useMemo(() => {
     return process.env.NEXT_PUBLIC_RPC_ENDPOINT || clusterApiUrl(network);
   }, [network]);

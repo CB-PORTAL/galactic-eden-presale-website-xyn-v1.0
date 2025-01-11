@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-const connection = new Connection("https://api.devnet.solana.com");
+const RPC = process.env.NEXT_PUBLIC_RPC_ENDPOINT || "https://api.mainnet-beta.solana.com";
+const connection = new Connection(RPC);
 
 export function usePresale() {
   const { publicKey, connected } = useWallet();
