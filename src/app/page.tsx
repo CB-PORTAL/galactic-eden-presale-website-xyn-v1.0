@@ -1,7 +1,7 @@
 "use client";
 
-import { ImmersivePortal } from '@/components/portal/ImmersivePortal';
+import GalacticPortal from "@/components/GalacticPortal";
 
 export default function Home() {
-  return <ImmersivePortal />;
+  return <GalacticPortal />;
 }
