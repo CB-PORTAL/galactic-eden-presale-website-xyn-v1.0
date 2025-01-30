@@ -1,50 +1,45 @@
-// src/components/wallet/ConnectButton.tsx
 "use client";
 
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletName } from "@solana/wallet-adapter-base";
 import { useCallback, useState, useEffect } from "react";
 
 export function ConnectButton() {
-  const [connected, setConnected] = useState(false);
+  const { connected, publicKey, select, connect, disconnect } = useWallet();
   const [showDropdown, setShowDropdown] = useState(false);
-  const [publicKey, setPublicKey] = useState<string | null>(null);
 
-  // Check initial connection status
   useEffect(() => {
-    if (window.solana?.isConnected) {
-      setConnected(true);
-      setPublicKey(window.solana.publicKey?.toString() || null);
-    }
-  }, []);
+    console.log("ConnectButton: Wallet connection status:", connected);
+  }, [connected]);
 
   const handleConnect = useCallback(async () => {
     try {
       if (!window.solana) {
-        alert("Please install Phantom wallet");
+        window.open("https://phantom.app/", "_blank");
         return;
       }
-
-      const response = await window.solana.connect();
-      console.log("Connected!", response);
-      setConnected(true);
-      setPublicKey(response.publicKey.toString());
+      
+      // First select Phantom wallet
+      select("Phantom" as WalletName);
+      
+      // Then connect
+      await connect();
+      console.log("ConnectButton: Connecting wallet...");
       setShowDropdown(false);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Connection failed:", err);
-      alert("Failed to connect: " + (err.message || "Unknown error"));
+      alert("Failed to connect. Please try again.");
     }
-  }, []);
+  }, [connect, select]);
 
   const handleDisconnect = useCallback(async () => {
     try {
-      if (window.solana) {
-        await window.solana.disconnect();
-        setConnected(false);
-        setPublicKey(null);
-      }
-    } catch (err: any) {
+      await disconnect();
+      console.log("ConnectButton: Disconnected wallet");
+    } catch (err) {
       console.error("Disconnect failed:", err);
     }
-  }, []);
+  }, [disconnect]);
 
   return (
     <div className="relative">
@@ -61,7 +56,7 @@ export function ConnectButton() {
         {connected ? (
           <span className="flex items-center gap-2">
             <span className="h-2 w-2 bg-green-400 rounded-full"/>
-            {publicKey ? `${publicKey.slice(0, 4)}...` : "Connected"}
+            {publicKey ? `${publicKey.toString().slice(0, 4)}...` : "Connected"}
           </span>
         ) : (
           "Select Wallet"

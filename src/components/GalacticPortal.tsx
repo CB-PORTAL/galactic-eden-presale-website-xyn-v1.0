@@ -1,56 +1,62 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { ConnectButton } from "./wallet/ConnectButton";
 import { PurchaseInterface } from "./presale/PurchaseInterface";
 
-const PortalRing = ({ delay = 0, size = 400 }) => (
-  <motion.div
-    className="absolute left-1/2 top-1/2 border border-blue-500/30 rounded-full"
-    style={{
-      width: size,
-      height: size,
-      transform: 'translate(-50%, -50%)'
-    }}
-    animate={{
-      rotate: 360,
-      scale: [1, 1.1, 1],
-      opacity: [0.3, 0.5, 0.3]
-    }}
-    transition={{
-      duration: 10,
-      delay,
-      repeat: Infinity,
-      ease: "linear"
-    }}
-  />
+// Radial dot pattern background
+const RadialDots = () => (
+  <div className="fixed inset-0 overflow-hidden">
+    <div className="absolute inset-0 flex items-center justify-center">
+      {[...Array(8)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute w-full h-full"
+          style={{
+            transform: `rotate(${i * 45}deg)`
+          }}
+        >
+          {[...Array(12)].map((_, j) => (
+            <motion.div
+              key={j}
+              className="absolute w-1 h-1 bg-blue-400/20 rounded-full"
+              style={{
+                left: '50%',
+                top: `${j * 8}%`
+              }}
+              animate={{
+                opacity: [0.2, 0.5, 0.2]
+              }}
+              transition={{
+                duration: 3,
+                delay: j * 0.2,
+                repeat: Infinity
+              }}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
 );
 
-const Star = ({ index }: { index: number }) => {
-  const randomSize = Math.random() * 2 + 1;
-  return (
-    <motion.div
-      className="absolute bg-blue-400 rounded-full"
-      style={{
-        width: randomSize,
-        height: randomSize,
-        left: `${Math.random() * 100}%`,
-        top: `${Math.random() * 100}%`,
-      }}
-      animate={{
-        scale: [1, 1.5, 1],
-        opacity: [0.3, 0.8, 0.3],
-      }}
-      transition={{
-        duration: Math.random() * 2 + 2,
-        repeat: Infinity,
-        delay: Math.random() * 2,
-      }}
-    />
-  );
-};
+// Portal glow effect
+const PortalGlow = () => (
+  <motion.div
+    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]"
+    animate={{
+      scale: [1, 1.2, 1],
+      opacity: [0.3, 0.6, 0.3]
+    }}
+    transition={{
+      duration: 4,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }}
+  >
+    <div className="absolute inset-0 rounded-full bg-gradient-radial from-blue-500/20 via-purple-500/10 to-transparent blur-xl" />
+  </motion.div>
+);
 
 export default function GalacticPortal() {
   const { connected } = useWallet();
@@ -61,54 +67,36 @@ export default function GalacticPortal() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0d1f] text-white relative overflow-hidden">
-      {/* Starfield Background */}
-      <div className="fixed inset-0">
-        <div className="absolute inset-0 bg-gradient-radial from-blue-500/10 via-transparent to-transparent" />
-        {mounted && Array.from({ length: 50 }).map((_, i) => (
-          <Star key={i} index={i} />
-        ))}
+    <div className="min-h-screen bg-[#0a0d1f] flex items-center justify-center overflow-hidden">
+      <RadialDots />
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-radial from-blue-500/5 via-transparent to-transparent" />
       </div>
-
-      {/* Header */}
-      <header className="relative z-50 p-6 bg-black/20 backdrop-blur-sm border-b border-blue-500/20">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-            XYN Presale
-          </h1>
-          <ConnectButton />
-        </div>
-      </header>
-
-      {/* Portal Effect */}
-      <main className="relative flex items-center justify-center min-h-[calc(100vh-88px)]">
-        <div className="relative">
-          <PortalRing size={400} delay={0} />
-          <PortalRing size={500} delay={0.5} />
-          <PortalRing size={600} delay={1} />
-
-          {/* Content Card */}
-          <motion.div 
-            className="relative z-10 w-full max-w-xl mx-auto backdrop-blur-xl bg-black/40 p-8 rounded-xl border border-blue-500/20"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+      
+      <div className="relative z-10 w-full max-w-lg mx-auto">
+        <PortalGlow />
+        <motion.div
+          className="relative backdrop-blur-xl bg-black/40 p-8 rounded-xl border border-blue-500/20 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h2 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+            Galactic Eden Presale
+          </h2>
+          <p className="text-blue-300/80 mb-8">Exchange SOL for XYN tokens</p>
+          
+          <div className="space-y-6">
             {!connected ? (
-              <div className="text-center space-y-6">
-                <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-                  Welcome to Galactic Eden
-                </h2>
-                <p className="text-blue-300/80">
-                  Connect your wallet to begin the journey
-                </p>
-              </div>
+              <ConnectButton />
             ) : (
               <PurchaseInterface />
             )}
-          </motion.div>
-        </div>
-      </main>
+            <div className="text-sm text-blue-300/60">
+              Total supply: {(10_000_000_000).toLocaleString()} XYN
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
-}
+} // <-- This was the missing closing brace

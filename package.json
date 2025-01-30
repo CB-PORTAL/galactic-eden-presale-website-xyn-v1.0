@@ -15,8 +15,8 @@
         "@solana/wallet-adapter-react-ui": "^0.9.35",
         "@solana/wallet-adapter-wallets": "^0.19.32",
         "@solana/web3.js": "^1.98.0",
-        "bs58": "^6.0.0",
-        "framer-motion": "^11.17.0",
+        "encoding": "^0.1.13",
+        "framer-motion": "^11.18.0",
         "lucide-react": "^0.469.0",
         "next": "13.4.12",
         "pino-pretty": "^13.0.0",
@@ -25,10 +25,12 @@
         "tailwindcss": "^3.3.2"
     },
     "devDependencies": {
-        "@types/node": "^20.17.12",
+        "@types/bs58": "^4.0.4",
+        "@types/node": "^20.17.14",
         "@types/react": "^18.2.8",
         "@types/react-dom": "^18.2.4",
         "autoprefixer": "^10.4.14",
+        "bs58": "^4.0.1",
         "postcss": "^8.4.21",
         "ts-node": "^10.9.1",
         "typescript": "^5.7.3"

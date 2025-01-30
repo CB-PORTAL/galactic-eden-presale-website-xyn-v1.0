@@ -1,4 +1,4 @@
-// File: /src/app/providers.tsx
+// src/app/providers.tsx
 "use client";
 
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
@@ -8,7 +8,6 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
 import { useMemo } from "react";
 
-// Use NEXT_PUBLIC_SOLANA_NETWORK if set; default to "devnet" otherwise
 const solanaNetworkEnv = process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -19,7 +18,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
       ? WalletAdapterNetwork.Testnet
       : WalletAdapterNetwork.Devnet;
 
-  // Use QuickNode from env, else fallback to clusterApiUrl
   const endpoint = useMemo(() => {
     return process.env.NEXT_PUBLIC_RPC_ENDPOINT || clusterApiUrl(network);
   }, [network]);

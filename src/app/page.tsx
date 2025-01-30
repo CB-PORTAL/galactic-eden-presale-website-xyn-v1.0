@@ -1,7 +1,17 @@
 "use client";
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
 
-import GalacticPortal from "@/components/GalacticPortal";
+// Dynamically import GalacticPortal with no SSR
+const GalacticPortal = dynamic(
+  () => import('@/components/GalacticPortal'),
+  { ssr: false }
+);
 
 export default function Home() {
-  return <GalacticPortal />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <GalacticPortal />
+    </Suspense>
+  );
 }
