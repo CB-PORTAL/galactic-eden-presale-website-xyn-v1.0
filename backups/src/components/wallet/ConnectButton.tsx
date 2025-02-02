@@ -19,7 +19,10 @@ export function ConnectButton() {
         return;
       }
       
+      // First select Phantom wallet
       select("Phantom" as WalletName);
+      
+      // Then connect
       await connect();
       console.log("ConnectButton: Connecting wallet...");
       setShowDropdown(false);
@@ -48,32 +51,32 @@ export function ConnectButton() {
             setShowDropdown(!showDropdown);
           }
         }}
-        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 px-8 rounded-lg transition-all transform hover:scale-105"
+        className="cyber-button"
       >
         {connected ? (
-          <span className="flex items-center justify-center gap-2">
+          <span className="flex items-center gap-2">
             <span className="h-2 w-2 bg-green-400 rounded-full"/>
             {publicKey ? `${publicKey.toString().slice(0, 4)}...` : "Connected"}
           </span>
         ) : (
-          "Begin Journey"
+          "Select Wallet"
         )}
       </button>
 
       {showDropdown && !connected && (
-        <div className="absolute w-full mt-2 bg-gradient-to-r from-indigo-900/80 to-purple-900/80 backdrop-blur-lg rounded-lg shadow-xl border border-indigo-500/20">
+        <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-xl">
           <button
             onClick={() => {
               window.open("https://phantom.app/", "_blank");
               setShowDropdown(false);
             }}
-            className="w-full p-3 hover:bg-indigo-600/30 text-white/80 hover:text-white text-left transition-all"
+            className="w-full p-2 hover:bg-gray-700 text-white text-left"
           >
             Install Phantom
           </button>
           <button
             onClick={handleConnect}
-            className="w-full p-3 hover:bg-indigo-600/30 text-white/80 hover:text-white text-left transition-all"
+            className="w-full p-2 hover:bg-gray-700 text-white text-left"
           >
             Already Installed
           </button>

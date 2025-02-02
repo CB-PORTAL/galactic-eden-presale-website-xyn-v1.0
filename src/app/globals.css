@@ -3,168 +3,29 @@
 @tailwind utilities;
 
 :root {
-  --foreground: #ffffff;
-  --background: #0a0d1f;
+  --purple-dark: #2D1264;
+  --purple-light: #4C1D95;
+  --text-blue: #93C5FD;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  overflow-x: hidden;
-}
-
-.cyber-button {
-  position: relative;
+  background-color: black;
   overflow: hidden;
-  padding: 1rem 2rem;
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.5);
-  color: white;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  transition: all 0.3s;
-  animation: button-float 3s ease-in-out infinite;
 }
 
-.cyber-button:hover {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(59, 130, 246, 0.8);
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.8; }
 }
 
-.cyber-card {
-  background: rgba(10, 13, 31, 0.8);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  backdrop-filter: blur(10px);
-  box-shadow:
-    0 0 10px rgba(59, 130, 246, 0.2),
-    inset 0 0 20px rgba(59, 130, 246, 0.1);
+.animate-twinkle {
+  animation: twinkle 3s ease-in-out infinite;
 }
 
-/* Animation for the portal spin effect */
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Button float animation */
-@keyframes button-float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-/* Portal background glow effect */
-.bg-space {
-  background: 
-    radial-gradient(circle at center, 
-      rgba(59, 130, 246, 0.1) 0%,
-      transparent 70%),
-    var(--background);
-}
-
-/* Cyberpunk text effect */
-.cyberpunk-text {
-  text-shadow: 
-    0 0 5px rgba(59, 130, 246, 0.5),
-    0 0 10px rgba(59, 130, 246, 0.3);
-}
-
-/* Grid background effect */
-.cyber-grid-bg {
-  background-image: 
-    linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
-  background-position: center center;
-}
-
-/* Add to your globals.css */
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@keyframes portal-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.bg-gradient-conic {
-  background: conic-gradient(from 0deg, var(--tw-gradient-stops));
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.animate-pulse-slow {
-  animation: pulse 3s ease-in-out infinite;
-}
-
-.animate-portal-spin {
-  animation: portal-spin 4s linear infinite;
-}
-
-/* Glassmorphism */
-.glass {
-  background: rgba(13, 16, 45, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(13, 16, 45, 0.7);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.5);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.7);
-}
-
-@keyframes portal-glow {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.3); }
-}
-
-@keyframes scan-line {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
+/* Remove default input styles */
+input {
+  outline: none;
 }

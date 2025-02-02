@@ -1,102 +1,76 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// src/components/GalacticPortal.tsx
+'use client';
+
+import React from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { ConnectButton } from "./wallet/ConnectButton";
-import { PurchaseInterface } from "./presale/PurchaseInterface";
 
-// Radial dot pattern background
-const RadialDots = () => (
-  <div className="fixed inset-0 overflow-hidden">
-    <div className="absolute inset-0 flex items-center justify-center">
-      {[...Array(8)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-full h-full"
-          style={{
-            transform: `rotate(${i * 45}deg)`
-          }}
-        >
-          {[...Array(12)].map((_, j) => (
-            <motion.div
-              key={j}
-              className="absolute w-1 h-1 bg-blue-400/20 rounded-full"
+const GalacticPortal: React.FC = () => {
+  const { connected } = useWallet();
+  
+  return (
+    // Black background with centered content
+    <div className="fixed inset-0 bg-black flex items-center justify-center">
+      {/* White bordered container matching screenshot dimensions */}
+      <div className="relative w-[400px] h-[750px] border border-white/10 rounded-xl overflow-hidden">
+        {/* Main gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#4C1D95] via-[#3B0764] to-[#2D1264]">
+          {/* Twinkling stars */}
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-[2px] h-[2px] bg-white rounded-full animate-twinkle"
               style={{
-                left: '50%',
-                top: `${j * 8}%`
-              }}
-              animate={{
-                opacity: [0.2, 0.5, 0.2]
-              }}
-              transition={{
-                duration: 3,
-                delay: j * 0.2,
-                repeat: Infinity
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                opacity: 0.6
               }}
             />
           ))}
-        </div>
-      ))}
-    </div>
-  </div>
-);
 
-// Portal glow effect
-const PortalGlow = () => (
-  <motion.div
-    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]"
-    animate={{
-      scale: [1, 1.2, 1],
-      opacity: [0.3, 0.6, 0.3]
-    }}
-    transition={{
-      duration: 4,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }}
-  >
-    <div className="absolute inset-0 rounded-full bg-gradient-radial from-blue-500/20 via-purple-500/10 to-transparent blur-xl" />
-  </motion.div>
-);
+          {/* Main content with proper spacing */}
+          <div className="relative z-10 flex flex-col items-center px-8 pt-12 pb-6 h-full">
+            {/* Title */}
+            <h1 className="text-[40px] font-bold text-[#93C5FD] text-center leading-tight mb-12">
+              Gateway<br />to Galactic<br />Eden
+            </h1>
 
-export default function GalacticPortal() {
-  const { connected } = useWallet();
-  const [mounted, setMounted] = useState(false);
+            {/* Card section with exact styling */}
+            <div className="w-full bg-[#3B0764]/60 backdrop-blur-lg rounded-xl p-6 space-y-4">
+              <p className="text-[#93C5FD] text-center">
+                Enter to acquire XYN tokens -<br />
+                your key to the new world
+              </p>
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Amount of XYN tokens"
+                  className="w-full p-3 bg-[#2D1264]/90 rounded-lg text-[#93C5FD] placeholder-[#93C5FD]/50 border border-[#93C5FD]/20 focus:outline-none"
+                />
 
-  return (
-    <div className="min-h-screen bg-[#0a0d1f] flex items-center justify-center overflow-hidden">
-      <RadialDots />
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-radial from-blue-500/5 via-transparent to-transparent" />
-      </div>
-      
-      <div className="relative z-10 w-full max-w-lg mx-auto">
-        <PortalGlow />
-        <motion.div
-          className="relative backdrop-blur-xl bg-black/40 p-8 rounded-xl border border-blue-500/20 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h2 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-            Galactic Eden Presale
-          </h2>
-          <p className="text-blue-300/80 mb-8">Exchange SOL for XYN tokens</p>
-          
-          <div className="space-y-6">
-            {!connected ? (
-              <ConnectButton />
-            ) : (
-              <PurchaseInterface />
-            )}
-            <div className="text-sm text-blue-300/60">
-              Total supply: {(10_000_000_000).toLocaleString()} XYN
+                <p className="text-sm text-[#93C5FD]/80 text-center">
+                  Exchange Rate: 1 SOL = 1,000,000 XYN
+                </p>
+
+                <button className="w-full py-3 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5258EA] hover:to-[#7C4DEF] text-white rounded-lg font-medium transition-colors">
+                  Begin Journey
+                </button>
+              </div>
+            </div>
+
+            {/* Footer with exact spacing */}
+            <div className="mt-auto text-center space-y-1">
+              <p className="text-[#93C5FD]/70">Total Supply: 10,000,000,000 XYN</p>
+              <p className="text-[#93C5FD]/70">Tokens Distributed: 324,857,345 XYN</p>
+              <p className="text-sm text-[#93C5FD]/50">Powered by Solana</p>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
-} // <-- This was the missing closing brace
+};
+
+export default GalacticPortal;

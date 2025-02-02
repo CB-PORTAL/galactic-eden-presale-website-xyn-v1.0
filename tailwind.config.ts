@@ -3,18 +3,15 @@ module.exports = {
   content: ["./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+      colors: {
+        'portal-purple': '#4c1d95',
+        'portal-blue': '#93c5fd',
       },
-      animation: {
-        'twinkle': 'twinkle 3s ease-in-out infinite',
-        'portal-spin': 'spin 20s linear infinite',
+      backdropBlur: {
+        'md': '12px',
       },
-      keyframes: {
-        twinkle: {
-          '0%, 100%': { opacity: 0.2 },
-          '50%': { opacity: 0.8 },
-        }
+      maxWidth: {
+        'portal': '400px',
       }
     }
   },
