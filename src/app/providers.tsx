@@ -1,4 +1,3 @@
-// src/app/providers.tsx
 "use client";
 
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
@@ -8,7 +7,7 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
 import { useMemo } from "react";
 
-const solanaNetworkEnv = process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet";
+const solanaNetworkEnv = process.env.NEXT_PUBLIC_SOLANA_NETWORK || "testnet";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const network =
