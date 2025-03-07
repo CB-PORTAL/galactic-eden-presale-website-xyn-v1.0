@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import { PRESALE_CONFIG } from "@/config/presale";
-import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { LoadingSpinner } from '../../LoadingSpinner';
 
 export function PurchaseInterface() {
   const { connected, publicKey, signTransaction } = useWallet();

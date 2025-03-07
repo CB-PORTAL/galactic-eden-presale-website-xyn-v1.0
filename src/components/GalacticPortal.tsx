@@ -1,3 +1,4 @@
+// src/components/GalacticPortal.tsx
 'use client';
 
 import React from 'react';
@@ -5,6 +6,8 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { ConnectButton } from "./wallet/ConnectButton";
 import { PurchaseInterface } from "./presale/PurchaseInterface";
 import { TokenMetrics } from "./presale/TokenMetrics";
+import ImprovedSpaceshipFleet from "./animations/ImprovedSpaceshipFleet";
+import AudioPlayer from "./AudioPlayer";
 import "./wallet/ConnectButtonStyles.css";
 import { DebugToggle } from "./DebugToggle";
 
@@ -46,6 +49,9 @@ const GalacticPortal: React.FC = () => {
             />
           ))}
         </div>
+       
+        {/* Improved Spaceship animations */}
+        <ImprovedSpaceshipFleet count={6} minSize={30} maxSize={55} minSpeed={0.7} maxSpeed={1.5} />
        
         {/* Content container */}
         <div style={{
@@ -152,6 +158,9 @@ const GalacticPortal: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Add the audio player */}
+      <AudioPlayer audioSrc="/audio/galactic-ambient.mp3" volume={0.4} />
     </div>
   );
 };

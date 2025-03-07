@@ -1,3 +1,4 @@
+import { API_CONFIG } from "@/config/api-config";
 import { NextResponse } from "next/server";
 import {
   Connection,
@@ -10,20 +11,13 @@ import {
 import {
   createTransferInstruction,
   getOrCreateAssociatedTokenAccount,
-  getAssociatedTokenAddress,
 } from "@solana/spl-token";
-
-// TEST MODE CONFIGURATION
-// In production, these would come from environment variables
-const TEST_MODE = true; // Change to false for mainnet
-const SIMULATION_DELAY = 2000; // ms to simulate transaction processing
-const SIMULATION_SUCCESS_RATE = 0.95; // 95% success rate for testing error handling
 
 // Helper function for simulation delays
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function POST(request: Request) {
-  console.log("Distribution process started", TEST_MODE ? "(TEST MODE)" : "");
+  console.log("Distribution process started", API_CONFIG.TEST_MODE ? "(TEST MODE)" : "");
  
   try {
     // Parse request body
@@ -41,12 +35,12 @@ export async function POST(request: Request) {
     // Log the attempt
     console.log(`Processing distribution of ${xynAmount} XYN to ${buyerPubkey}`);
 
-    if (TEST_MODE) {
+    if (API_CONFIG.TEST_MODE) {
       // Simulate processing delay
-      await sleep(SIMULATION_DELAY);
+      await sleep(API_CONFIG.SIMULATION.DELAY);
      
       // Occasionally simulate a failure for testing error handling
-      if (Math.random() > SIMULATION_SUCCESS_RATE) {
+      if (Math.random() > API_CONFIG.SIMULATION.SUCCESS_RATE) {
         throw new Error("Simulated random transaction failure for testing");
       }
      
@@ -80,9 +74,9 @@ export async function POST(request: Request) {
       const RPC_ENDPOINT = process.env.NEXT_PUBLIC_RPC_ENDPOINT;
      
       // Constants for transaction handling
-      const MAX_RETRIES = 5;
-      const RETRY_DELAY = 2000; // 2 seconds  // Moved this inside the function scope
-      const MAX_TIMEOUT = 90000; // 90 seconds
+      const MAX_RETRIES = API_CONFIG.PRODUCTION.MAX_RETRIES;
+      const RETRY_DELAY = API_CONFIG.PRODUCTION.RETRY_DELAY;
+      const MAX_TIMEOUT = API_CONFIG.PRODUCTION.MAX_TIMEOUT;
      
       const connection = new Connection(RPC_ENDPOINT, {
         commitment: 'confirmed',
@@ -108,9 +102,9 @@ export async function POST(request: Request) {
         // Balance verification
         const sourceAccount = await connection.getTokenAccountBalance(sourceATA.address);
         const sourceBalance = Number(sourceAccount.value.amount);
-        
+       
         if (sourceBalance < rawAmount) {
-          return NextResponse.json({ 
+          return NextResponse.json({
             success: false,
             error: "Insufficient presale balance",
             details: "Not enough tokens in the presale wallet"
@@ -118,7 +112,7 @@ export async function POST(request: Request) {
         }
        
         const buyerPubkeyObj = new PublicKey(buyerPubkey);
-        
+       
         // Get or create destination token account
         const buyerATA = await getOrCreateAssociatedTokenAccount(
           connection,
@@ -147,8 +141,8 @@ export async function POST(request: Request) {
        
         // Send transaction with retry mechanism
         const signature = await sendTransactionWithRetry(
-          connection, 
-          transaction, 
+          connection,
+          transaction,
           [presaleWallet],
           MAX_RETRIES,
           RETRY_DELAY  // Pass the RETRY_DELAY as a parameter
@@ -196,7 +190,7 @@ async function sendTransactionWithRetry(
   transaction: Transaction,
   signers: Keypair[],
   maxRetries = 5,
-  retryDelay = 2000  // Added retryDelay parameter with default value
+  retryDelay = 2000
 ): Promise<string> {
   let lastError;
  
