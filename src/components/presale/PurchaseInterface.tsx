@@ -13,6 +13,7 @@ export function PurchaseInterface() {
   const [error, setError] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [transactionSignature, setTransactionSignature] = useState("");
+  const [processingStep, setProcessingStep] = useState(""); // Track current processing step
 
   // Convert XYN to SOL cost and calculate estimates
   const xynAmount = parseFloat(amount) || 0;
@@ -29,7 +30,7 @@ export function PurchaseInterface() {
      
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Balance verification failed');
+        throw new Error(error.message || error.details || 'Balance verification failed');
       }
      
       const { available } = await response.json();
@@ -46,27 +47,69 @@ export function PurchaseInterface() {
   };
 
   const confirmPurchase = async () => {
-    if (!publicKey || !amount || !signTransaction) return;
+    if (!publicKey || !amount || !signTransaction) {
+      setError("Wallet not connected or invalid amount");
+      return;
+    }
    
     setError("");
     setIsProcessing(true);
-    setStatus("Verifying availability...");
+    setStatus("Starting transaction...");
    
     try {
       // 1. Verify token availability
+      setProcessingStep("verify");
+      setStatus("Verifying token availability...");
+      
       const isAvailable = await verifyTokenAvailability(amount);
       if (!isAvailable) {
         throw new Error("Insufficient presale tokens available");
       }
 
-      // 2. Process XYN distribution first
-      setStatus("Processing token distribution...");
+      // 2. CHANGED ORDER: Process SOL transfer FIRST
+      setProcessingStep("sol-transfer");
+      setStatus("Transferring SOL... Please confirm in your wallet");
+      
+      // Create and send the SOL transfer transaction
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: new PublicKey(PRESALE_CONFIG.PRESALE_ADDRESS),
+          lamports: solAmount * LAMPORTS_PER_SOL
+        })
+      );
+
+      transaction.recentBlockhash = (await connection.getLatestBlockhash('confirmed')).blockhash;
+      transaction.feePayer = publicKey;
+
+      // Have user sign the transaction
+      const signed = await signTransaction(transaction);
+      
+      // Send the transaction and wait for confirmation
+      const solSignature = await connection.sendRawTransaction(signed.serialize());
+      setStatus("Confirming SOL transfer...");
+      
+      // Wait for confirmation with a timeout
+      const solConfirmation = await Promise.race([
+        connection.confirmTransaction({
+          signature: solSignature,
+          blockhash: transaction.recentBlockhash,
+          lastValidBlockHeight: (await connection.getLatestBlockhash('confirmed')).lastValidBlockHeight
+        }, 'confirmed'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Transaction confirmation timeout")), 60000))
+      ]);
+
+      // 3. Only after SOL transfer is confirmed, process XYN distribution
+      setProcessingStep("xyn-transfer");
+      setStatus("SOL received. Processing token distribution...");
+      
       const distributeRes = await fetch("/api/distribute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           buyerPubkey: publicKey.toString(),
-          xynAmount: amount
+          xynAmount: amount,
+          solSignature: solSignature // Pass the SOL transaction signature for record-keeping
         })
       });
 
@@ -77,30 +120,25 @@ export function PurchaseInterface() {
       }
 
       setTransactionSignature(responseData.signature);
-
-      // 3. Process SOL transfer after successful distribution
-      setStatus("Transferring SOL...");
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: new PublicKey(PRESALE_CONFIG.PRESALE_ADDRESS),
-          lamports: solAmount * LAMPORTS_PER_SOL
-        })
-      );
-
-      transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-      transaction.feePayer = publicKey;
-
-      const signed = await signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signed.serialize());
-      await connection.confirmTransaction(signature);
-
       setStatus(`Success! XYN tokens sent to your wallet. Transaction: ${responseData.signature.slice(0, 8)}...`);
       setAmount("");
       setShowConfirmation(false);
+      setProcessingStep("complete");
+      
     } catch (error: any) {
       console.error("Transaction failed:", error);
-      setError(error.message || "Transaction failed");
+      
+      // Provide more helpful error messages based on the step that failed
+      if (processingStep === "verify") {
+        setError("Failed to verify token availability: " + (error.message || "Please try again"));
+      } else if (processingStep === "sol-transfer") {
+        setError("SOL transfer failed: " + (error.message || "Please check your wallet and try again"));
+      } else if (processingStep === "xyn-transfer") {
+        setError("XYN token distribution failed (BUT YOUR SOL WAS SENT): " + (error.message || "Please contact support with your wallet address"));
+      } else {
+        setError(error.message || "Transaction failed");
+      }
+      
       setStatus("");
     } finally {
       setIsProcessing(false);
@@ -265,8 +303,8 @@ export function PurchaseInterface() {
               color: '#6EE7B7'
             }}>
               <div style={{ marginBottom: '0.5rem' }}>Transaction Complete</div>
-              <a 
-                href={`https://${process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta' ? '' : process.env.NEXT_PUBLIC_SOLANA_NETWORK + '.'}solscan.io/tx/${transactionSignature}`} 
+              <a
+                href={`https://${process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta' ? '' : process.env.NEXT_PUBLIC_SOLANA_NETWORK + '.'}solscan.io/tx/${transactionSignature}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: '#93C5FD', fontSize: '0.8rem', wordBreak: 'break-all' }}

@@ -11,6 +11,7 @@ import {
 import {
   createTransferInstruction,
   getOrCreateAssociatedTokenAccount,
+  getAssociatedTokenAddress,
 } from "@solana/spl-token";
 
 // Helper function for simulation delays
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
  
   try {
     // Parse request body
-    const { buyerPubkey, xynAmount } = await request.json();
+    const { buyerPubkey, xynAmount, solSignature } = await request.json();
    
     // Validate input parameters
     if (!buyerPubkey || !xynAmount || isNaN(Number(xynAmount)) || Number(xynAmount) <= 0) {
@@ -32,8 +33,20 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    // Validate SOL signature is present in production mode
+    if (!API_CONFIG.TEST_MODE && !solSignature) {
+      console.error("Missing SOL transaction signature");
+      return NextResponse.json({
+        error: "Missing SOL transaction signature",
+        details: "SOL payment verification failed"
+      }, { status: 400 });
+    }
+
     // Log the attempt
     console.log(`Processing distribution of ${xynAmount} XYN to ${buyerPubkey}`);
+    if (solSignature) {
+      console.log(`SOL payment transaction: ${solSignature}`);
+    }
 
     if (API_CONFIG.TEST_MODE) {
       // Simulate processing delay
@@ -83,6 +96,33 @@ export async function POST(request: Request) {
         confirmTransactionInitialTimeout: MAX_TIMEOUT,
       });
      
+      // If SOL signature is provided, verify it is confirmed before proceeding
+      if (solSignature) {
+        try {
+          console.log(`Verifying SOL payment transaction: ${solSignature}`);
+          const signatureStatus = await connection.getSignatureStatus(solSignature);
+          
+          if (!signatureStatus.value || signatureStatus.value.err || 
+              !['confirmed', 'finalized'].includes(signatureStatus.value.confirmationStatus || '')) {
+            console.error("SOL payment transaction not confirmed:", signatureStatus);
+            return NextResponse.json({
+              success: false,
+              error: "SOL payment verification failed",
+              details: "The SOL payment transaction has not been confirmed on the network"
+            }, { status: 400 });
+          }
+          
+          console.log("SOL payment confirmed. Proceeding with token distribution.");
+        } catch (error) {
+          console.error("Error verifying SOL payment:", error);
+          return NextResponse.json({
+            success: false,
+            error: "SOL payment verification error",
+            details: "Failed to verify SOL payment transaction"
+          }, { status: 400 });
+        }
+      }
+     
       const presaleWallet = loadWalletFromEnv(PRESALE_SECRET_KEY);
       const mintPubkey = new PublicKey(XYN_MINT_ADDRESS);
       const DECIMALS = 9;
@@ -91,6 +131,25 @@ export async function POST(request: Request) {
       console.log("Initializing token accounts...");
 
       try {
+        // Check if buyer public key is valid
+        let buyerPubkeyObj: PublicKey;
+        try {
+          buyerPubkeyObj = new PublicKey(buyerPubkey);
+        } catch (error) {
+          console.error("Invalid buyer public key:", error);
+          return NextResponse.json({
+            success: false,
+            error: "Invalid wallet address",
+            details: "The provided wallet address is not a valid Solana address"
+          }, { status: 400 });
+        }
+       
+        // First check if destination token account exists before getting/creating
+        const buyerATA = await getAssociatedTokenAddress(
+          mintPubkey,
+          buyerPubkeyObj
+        );
+        
         // Get source token account
         const sourceATA = await getOrCreateAssociatedTokenAccount(
           connection,
@@ -99,7 +158,7 @@ export async function POST(request: Request) {
           presaleWallet.publicKey
         );
        
-        // Balance verification
+        // Balance verification - Make sure presale wallet has enough tokens
         const sourceAccount = await connection.getTokenAccountBalance(sourceATA.address);
         const sourceBalance = Number(sourceAccount.value.amount);
        
@@ -111,16 +170,25 @@ export async function POST(request: Request) {
           }, { status: 400 });
         }
        
-        const buyerPubkeyObj = new PublicKey(buyerPubkey);
+        // Now try to get or create the buyer's token account
+        let buyerTokenAccount;
+        try {
+          buyerTokenAccount = await getOrCreateAssociatedTokenAccount(
+            connection,
+            presaleWallet,
+            mintPubkey,
+            buyerPubkeyObj
+          );
+        } catch (error) {
+          console.error("Failed to get or create buyer token account:", error);
+          return NextResponse.json({
+            success: false,
+            error: "Token account creation failed",
+            details: "Could not create or access your XYN token account"
+          }, { status: 500 });
+        }
        
-        // Get or create destination token account
-        const buyerATA = await getOrCreateAssociatedTokenAccount(
-          connection,
-          presaleWallet,
-          mintPubkey,
-          buyerPubkeyObj
-        );
-       
+        // Create transaction with compute budget to prevent errors
         const transaction = new Transaction();
        
         // Add compute budget to prevent compute limit errors
@@ -133,7 +201,7 @@ export async function POST(request: Request) {
         transaction.add(
           createTransferInstruction(
             sourceATA.address,
-            buyerATA.address,
+            buyerTokenAccount.address,
             presaleWallet.publicKey,
             rawAmount
           )
@@ -145,9 +213,18 @@ export async function POST(request: Request) {
           transaction,
           [presaleWallet],
           MAX_RETRIES,
-          RETRY_DELAY  // Pass the RETRY_DELAY as a parameter
+          RETRY_DELAY
         );
        
+        // Additional verification that tokens were received
+        try {
+          await sleep(2000); // Brief pause to allow network to process
+          const tokenAccount = await connection.getTokenAccountBalance(buyerTokenAccount.address);
+          console.log(`Token account balance after transfer: ${tokenAccount.value.amount}`);
+        } catch (err) {
+          console.log("Note: Post-verification check could not confirm token balance, but transaction was signed");
+        }
+        
         return NextResponse.json({
           success: true,
           signature,

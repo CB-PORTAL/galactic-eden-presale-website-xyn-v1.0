@@ -1,18 +1,17 @@
-// src/components/AudioPlayer.tsx
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 
 interface AudioPlayerProps {
   audioSrc: string;
-  volume?: number; // 0 to 1
+  volume?: number;
   autoPlay?: boolean;
   loop?: boolean;
 }
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({
   audioSrc,
-  volume = 0.4, // Default to 40% volume
+  volume = 0.4,
   autoPlay = true,
   loop = true
 }) => {
@@ -22,29 +21,22 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [hasInteracted, setHasInteracted] = useState(false);
 
   useEffect(() => {
-    // Create audio element
     const audio = new Audio(audioSrc);
     audioRef.current = audio;
     
-    // Configure audio
     audio.volume = volume;
     audio.loop = loop;
     
-    // Event listeners
     audio.addEventListener('canplaythrough', () => {
       setIsLoaded(true);
-      // Many browsers require user interaction before allowing autoplay
-      // We'll keep trying to play in case user interacts with the page
       if (autoPlay) {
         attemptPlay();
       }
     });
     
-    // Handle play state tracking
     audio.addEventListener('play', () => setIsPlaying(true));
     audio.addEventListener('pause', () => setIsPlaying(false));
     
-    // Cleanup
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -52,8 +44,36 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       }
     };
   }, [audioSrc, volume, autoPlay, loop]);
+
+  // Auto-play when Connect Wallet is clicked
+  useEffect(() => {
+    const connectButtons = document.querySelectorAll('button');
+    
+    const handleConnectClick = () => {
+      if (audioRef.current && !isPlaying) {
+        attemptPlay();
+      }
+    };
+    
+    connectButtons.forEach(button => {
+      if (button.textContent?.includes('Connect Wallet') || 
+          button.textContent?.includes('Already Installed') || 
+          button.textContent?.includes('Install Phantom')) {
+        button.addEventListener('click', handleConnectClick);
+      }
+    });
+    
+    return () => {
+      connectButtons.forEach(button => {
+        if (button.textContent?.includes('Connect Wallet') || 
+            button.textContent?.includes('Already Installed') || 
+            button.textContent?.includes('Install Phantom')) {
+          button.removeEventListener('click', handleConnectClick);
+        }
+      });
+    };
+  }, [isPlaying]);
   
-  // Attempt to play audio (might be blocked by browser)
   const attemptPlay = async () => {
     if (audioRef.current && !isPlaying) {
       try {
@@ -66,7 +86,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }
   };
   
-  // Add event listener to document for user interaction
   useEffect(() => {
     const handleUserInteraction = () => {
       if (autoPlay && isLoaded && !isPlaying) {
@@ -75,7 +94,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       }
     };
     
-    // These events count as user interaction for autoplay policies
     document.addEventListener('click', handleUserInteraction);
     document.addEventListener('touchstart', handleUserInteraction);
     document.addEventListener('keydown', handleUserInteraction);
@@ -87,7 +105,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     };
   }, [autoPlay, isLoaded, isPlaying]);
   
-  // Toggle play/pause
   const togglePlayback = () => {
     if (!audioRef.current) return;
     
@@ -100,80 +117,148 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     setHasInteracted(true);
   };
   
+  // Enhanced cosmic audio control - repositioned to stay within the purple background
   return (
-    <div 
-      className="audio-player-controls" 
+    <div
+      className="cosmic-audio-control"
+      onClick={togglePlayback}
       style={{
         position: 'fixed',
         bottom: '20px',
-        right: '20px',
+        left: '50%',           // Center horizontally
+        transform: 'translateX(-50%)', // Ensure perfect centering
         zIndex: 50,
         display: 'flex',
         alignItems: 'center',
-        padding: '8px 16px',
-        backgroundColor: 'rgba(45, 18, 100, 0.7)',
-        backdropFilter: 'blur(8px)',
+        padding: '10px 16px',
+        backgroundColor: 'rgba(45, 18, 100, 0.75)',
+        backdropFilter: 'blur(10px)',
         borderRadius: '50px',
-        border: '1px solid rgba(139, 92, 246, 0.5)',
-        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4), 0 0 10px rgba(147, 197, 253, 0.2)',
-        transition: 'all 0.3s ease',
+        border: `1px solid ${isPlaying ? 'rgba(79, 209, 197, 0.5)' : 'rgba(139, 92, 246, 0.5)'}`,
+        boxShadow: isPlaying 
+          ? '0 0 15px rgba(79, 209, 197, 0.3), 0 0 5px rgba(79, 209, 197, 0.2)' 
+          : '0 0 15px rgba(139, 92, 246, 0.3), 0 0 5px rgba(139, 92, 246, 0.2)',
         cursor: 'pointer',
-        maxWidth: '300px'
+        transition: 'all 0.3s ease',
+        gap: '12px',
+        maxWidth: '280px',     // Limit width for smaller screens
+        width: 'auto'
       }}
-      onClick={togglePlayback}
     >
+      {/* Cosmic orb */}
       <div
         style={{
-          width: '32px',
-          height: '32px',
+          width: '24px',
+          height: '24px',
           borderRadius: '50%',
+          background: isPlaying 
+            ? 'radial-gradient(circle, #4fd1c5 10%, #4299e1 100%)' 
+            : 'radial-gradient(circle, #8b5cf6 10%, #6366f1 100%)',
+          boxShadow: isPlaying
+            ? '0 0 10px #4fd1c5, 0 0 5px rgba(66, 153, 225, 0.8) inset'
+            : '0 0 10px #8b5cf6, 0 0 5px rgba(99, 102, 241, 0.8) inset',
+          position: 'relative',
+          animation: isPlaying ? 'pulse 2s infinite' : 'none',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          background: isPlaying 
-            ? 'linear-gradient(135deg, rgba(79, 70, 229, 0.6), rgba(139, 92, 246, 0.6))' 
-            : 'linear-gradient(135deg, rgba(236, 72, 153, 0.6), rgba(139, 92, 246, 0.6))',
-          marginRight: '10px',
-          flexShrink: 0,
-          border: '1px solid rgba(147, 197, 253, 0.3)',
-          boxShadow: isPlaying 
-            ? '0 0 10px rgba(79, 70, 229, 0.4)' 
-            : '0 0 10px rgba(236, 72, 153, 0.4)'
+          justifyContent: 'center'
         }}
       >
-        {isPlaying ? (
-          <svg width="14" height="14" fill="white" viewBox="0 0 16 16">
-            <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
-          </svg>
-        ) : (
-          <svg width="14" height="14" fill="white" viewBox="0 0 16 16">
-            <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-          </svg>
+        {/* Sound wave animation */}
+        {isPlaying && (
+          <>
+            <div className="sound-wave" style={{
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              background: 'transparent',
+              border: '1px solid rgba(79, 209, 197, 0.5)',
+              animation: 'wave 2s infinite',
+              opacity: 0
+            }}></div>
+            <div className="sound-wave" style={{
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              background: 'transparent',
+              border: '1px solid rgba(79, 209, 197, 0.5)',
+              animation: 'wave 2s infinite 0.6s',
+              opacity: 0
+            }}></div>
+          </>
         )}
-      </div>
-      <div style={{ overflow: 'hidden' }}>
-        <p 
-          style={{ 
-            margin: 0, 
-            color: '#93C5FD',
-            fontSize: '0.8rem',
-            fontWeight: 'bold',
-            whiteSpace: 'nowrap'
-          }}
+        
+        {/* Icon */}
+        <svg 
+          width="14" 
+          height="14" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="white" 
+          strokeWidth="2"
+          strokeLinecap="round" 
+          strokeLinejoin="round"
         >
-          {isPlaying ? "Enhanced Experience On" : "Activate Full Experience"}
+          {isPlaying ? (
+            <>
+              <path d="M8 12h8" />
+            </>
+          ) : (
+            <>
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </>
+          )}
+        </svg>
+      </div>
+      
+      {/* Text content */}
+      <div style={{ textAlign: 'left' }}>
+        <p style={{
+          margin: 0,
+          fontSize: '0.8rem',
+          fontWeight: 'bold',
+          color: isPlaying ? '#4fd1c5' : '#93C5FD',
+          letterSpacing: '0.5px'
+        }}>
+          {isPlaying ? "Cosmic Experience Active" : "Activate Cosmic Experience"}
         </p>
-        <p 
-          style={{ 
-            margin: 0, 
-            color: 'rgba(147, 197, 253, 0.7)',
-            fontSize: '0.65rem',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          {isPlaying ? "Immersive Galactic Eden Sound" : "Unlock the cosmic atmosphere"}
+        <p style={{
+          margin: 0,
+          fontSize: '0.65rem',
+          color: 'rgba(147, 197, 253, 0.8)',
+          letterSpacing: '0.3px'
+        }}>
+          {isPlaying ? "Immersive Galactic Eden Sounds" : "Enhance your journey with cosmic ambient sound"}
         </p>
       </div>
+      
+      <style jsx>{`
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1); }
+        }
+        
+        @keyframes wave {
+          0% { transform: scale(1); opacity: 0.7; }
+          100% { transform: scale(2.2); opacity: 0; }
+        }
+        
+        .cosmic-audio-control:hover {
+          transform: translateX(-50%) translateY(-2px);
+          box-shadow: ${isPlaying 
+            ? '0 0 20px rgba(79, 209, 197, 0.4), 0 0 10px rgba(79, 209, 197, 0.3)' 
+            : '0 0 20px rgba(139, 92, 246, 0.4), 0 0 10px rgba(139, 92, 246, 0.3)'};
+        }
+
+        @media (max-width: 768px) {
+          .cosmic-audio-control {
+            padding: 8px 12px;
+          }
+        }
+      `}</style>
     </div>
   );
 };
