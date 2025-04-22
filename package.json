@@ -9,7 +9,7 @@
         "convert-key": "ts-node src/scripts/convert-private-key.ts"
     },
     "dependencies": {
-        "@solana/spl-token": "^0.4.9",
+        "@solana/spl-token": "^0.4.13",
         "@solana/wallet-adapter-base": "^0.9.23",
         "@solana/wallet-adapter-react": "^0.15.35",
         "@solana/wallet-adapter-react-ui": "^0.9.35",
@@ -30,6 +30,7 @@
         "@types/react-dom": "^18.2.4",
         "autoprefixer": "^10.4.20",
         "bs58": "^4.0.1",
+        "eslint": "^9.25.1",
         "postcss": "^8.5.3",
         "tailwindcss": "^4.0.10",
         "ts-node": "^10.9.1",

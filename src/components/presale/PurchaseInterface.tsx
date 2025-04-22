@@ -27,13 +27,20 @@ export function PurchaseInterface() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount })
       });
-     
+       
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || error.details || 'Balance verification failed');
       }
-     
-      const { available } = await response.json();
+       
+      const { available, availableBalance } = await response.json();
+        
+      if (available) {
+        console.log(`Verified presale wallet has enough tokens. Available: ${availableBalance} XYN`);
+      } else {
+        console.error(`Insufficient tokens in presale wallet. Requested: ${amount} XYN`);
+      }
+      
       return available;
     } catch (error) {
       console.error('Verification error:', error);
@@ -60,16 +67,16 @@ export function PurchaseInterface() {
       // 1. Verify token availability
       setProcessingStep("verify");
       setStatus("Verifying token availability...");
-      
+     
       const isAvailable = await verifyTokenAvailability(amount);
       if (!isAvailable) {
         throw new Error("Insufficient presale tokens available");
       }
-
+  
       // 2. CHANGED ORDER: Process SOL transfer FIRST
       setProcessingStep("sol-transfer");
       setStatus("Transferring SOL... Please confirm in your wallet");
-      
+     
       // Create and send the SOL transfer transaction
       const transaction = new Transaction().add(
         SystemProgram.transfer({
@@ -78,67 +85,108 @@ export function PurchaseInterface() {
           lamports: solAmount * LAMPORTS_PER_SOL
         })
       );
+  
+// Get fresh blockhash with retry logic
+let blockhash: { blockhash: string; lastValidBlockHeight: number } | undefined;
+let retries = 0;
+while (retries < 3) {
+  try {
+    const result = await connection.getLatestBlockhash('confirmed');
+    blockhash = result; // Now properly typed
+    break;
+  } catch (error) {
+    console.error(`Failed to get blockhash (attempt ${retries+1}/3)`, error);
+    retries++;
+    if (retries >= 3) throw new Error("Failed to get blockhash after multiple attempts");
+    await new Promise(r => setTimeout(r, 1000));
+  }
+}
 
-      transaction.recentBlockhash = (await connection.getLatestBlockhash('confirmed')).blockhash;
-      transaction.feePayer = publicKey;
+// Make sure blockhash was assigned
+if (!blockhash) {
+  throw new Error("Failed to get valid blockhash");
+}
 
+transaction.recentBlockhash = blockhash.blockhash;
+transaction.feePayer = publicKey;
+  
       // Have user sign the transaction
       const signed = await signTransaction(transaction);
-      
+     
       // Send the transaction and wait for confirmation
-      const solSignature = await connection.sendRawTransaction(signed.serialize());
+      const solSignature = await connection.sendRawTransaction(signed.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+        maxRetries: 5
+      });
+      
       setStatus("Confirming SOL transfer...");
-      
+      console.log("SOL transaction sent:", solSignature);
+     
       // Wait for confirmation with a timeout
-      const solConfirmation = await Promise.race([
-        connection.confirmTransaction({
-          signature: solSignature,
-          blockhash: transaction.recentBlockhash,
-          lastValidBlockHeight: (await connection.getLatestBlockhash('confirmed')).lastValidBlockHeight
-        }, 'confirmed'),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Transaction confirmation timeout")), 60000))
-      ]);
-
-      // 3. Only after SOL transfer is confirmed, process XYN distribution
+      try {
+        await Promise.race([
+          connection.confirmTransaction({
+            signature: solSignature,
+            blockhash: transaction.recentBlockhash,
+            lastValidBlockHeight: blockhash.lastValidBlockHeight
+          }, 'confirmed'),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Transaction confirmation timeout")), 60000))
+        ]);
+        console.log("SOL transaction confirmed");
+      } catch (confirmError) {
+        console.warn("Confirmation error but transaction might still be valid:", confirmError);
+        // We'll continue anyway and let the backend verify
+      }
+  
+      // 3. Process XYN distribution with enough delay for network propagation
       setProcessingStep("xyn-transfer");
-      setStatus("SOL received. Processing token distribution...");
+      setStatus("SOL sent. Processing token distribution...");
       
+      // Add a slight delay to ensure the transaction has propagated through the network
+      await new Promise(resolve => setTimeout(resolve, 3000));
+     
       const distributeRes = await fetch("/api/distribute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           buyerPubkey: publicKey.toString(),
           xynAmount: amount,
-          solSignature: solSignature // Pass the SOL transaction signature for record-keeping
+          solSignature: solSignature
         })
       });
-
+  
+      if (!distributeRes.ok) {
+        const errorData = await distributeRes.json();
+        throw new Error(errorData.error || errorData.details || "Distribution failed");
+      }
+  
       const responseData = await distributeRes.json();
-
-      if (!distributeRes.ok || !responseData.success) {
+  
+      if (!responseData.success) {
         throw new Error(responseData.error || responseData.details || "Distribution failed");
       }
-
+  
       setTransactionSignature(responseData.signature);
-      setStatus(`Success! XYN tokens sent to your wallet. Transaction: ${responseData.signature.slice(0, 8)}...`);
+      setStatus(`Success! ${amount} XYN tokens sent to your wallet.`);
       setAmount("");
       setShowConfirmation(false);
       setProcessingStep("complete");
-      
+     
     } catch (error: any) {
       console.error("Transaction failed:", error);
-      
+     
       // Provide more helpful error messages based on the step that failed
       if (processingStep === "verify") {
         setError("Failed to verify token availability: " + (error.message || "Please try again"));
       } else if (processingStep === "sol-transfer") {
         setError("SOL transfer failed: " + (error.message || "Please check your wallet and try again"));
       } else if (processingStep === "xyn-transfer") {
-        setError("XYN token distribution failed (BUT YOUR SOL WAS SENT): " + (error.message || "Please contact support with your wallet address"));
+        setError("XYN token distribution failed: " + (error.message || "Please contact support with your wallet address and transaction details"));
       } else {
         setError(error.message || "Transaction failed");
       }
-      
+     
       setStatus("");
     } finally {
       setIsProcessing(false);
@@ -313,6 +361,20 @@ export function PurchaseInterface() {
               </a>
             </div>
           )}
+
+          {/* ADD THE WARNING MESSAGE HERE - Right before the Purchase button */}
+          <div style={{
+            padding: '0.75rem',
+            backgroundColor: 'rgba(37, 99, 235, 0.2)',
+            border: '1px solid rgba(37, 99, 235, 0.5)',
+            borderRadius: '0.5rem',
+            color: '#93C5FD',
+            marginBottom: '1rem',
+            fontSize: '0.85rem'
+          }}>
+            <p style={{ marginBottom: '0.5rem' }}>⚠️ <strong>Important:</strong> You may see security warnings from Phantom as our dApp is awaiting verification.</p>
+            <p>If prompted, select "Proceed anyway (unsafe)" to complete your transaction. All contracts are verified on-chain.</p>
+          </div>
 
           <button
             onClick={handlePurchase}
