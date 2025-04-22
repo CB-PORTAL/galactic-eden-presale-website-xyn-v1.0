@@ -155,23 +155,44 @@ transaction.feePayer = publicKey;
           solSignature: solSignature
         })
       });
-  
-      if (!distributeRes.ok) {
-        const errorData = await distributeRes.json();
-        throw new Error(errorData.error || errorData.details || "Distribution failed");
+      
+      // Read the response body ONCE and store it
+      let responseData;
+      try {
+        responseData = await distributeRes.json();
+        
+        // Check if the request was successful
+        if (!distributeRes.ok || !responseData.success) {
+          // Even if the API reports an error, the transaction might have succeeded
+          console.warn("API reported failure but transaction might be successful:", responseData);
+          
+          // We'll set the error but continue with the transaction signature if present
+          if (responseData.signature) {
+            setTransactionSignature(responseData.signature);
+            setStatus(`Transaction sent! Check your wallet for ${amount} XYN tokens.`);
+            setAmount("");
+            setShowConfirmation(false);
+            setProcessingStep("complete");
+            return; // Exit early with a "soft" success
+          }
+          
+          throw new Error(responseData.error || responseData.details || "Distribution failed");
+        }
+        
+        // If we get here, everything succeeded
+        setTransactionSignature(responseData.signature);
+        setStatus(`Success! ${amount} XYN tokens sent to your wallet.`);
+        setAmount("");
+        setShowConfirmation(false);
+        setProcessingStep("complete");
+        
+      } catch (parseError) {
+        console.error("Failed to parse API response:", parseError);
+        
+        // The transaction might still be successful even if we can't parse the response
+        setStatus(`Transaction may have succeeded. Please check your wallet for ${amount} XYN tokens.`);
+        throw new Error("Failed to process distribution response");
       }
-  
-      const responseData = await distributeRes.json();
-  
-      if (!responseData.success) {
-        throw new Error(responseData.error || responseData.details || "Distribution failed");
-      }
-  
-      setTransactionSignature(responseData.signature);
-      setStatus(`Success! ${amount} XYN tokens sent to your wallet.`);
-      setAmount("");
-      setShowConfirmation(false);
-      setProcessingStep("complete");
      
     } catch (error: any) {
       console.error("Transaction failed:", error);
